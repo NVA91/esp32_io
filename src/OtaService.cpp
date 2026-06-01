@@ -2,12 +2,17 @@
 
 #include <ArduinoOTA.h>
 
-#include "AppConfig.h"
+#include "ConfigService.h"
 #include "Logger.h"
 
+OtaService::OtaService(const ConfigService& config) : config_(config) {}
+
 void OtaService::begin() {
-  ArduinoOTA.setHostname(AppConfig::kOtaHostname);
-  ArduinoOTA.setPassword(AppConfig::kOtaPassword);
+  const ConfigService::Settings& settings = config_.settings();
+  ArduinoOTA.setHostname(settings.otaHostname.c_str());
+  if (!config_.secrets().otaPassword.isEmpty()) {
+    ArduinoOTA.setPassword(config_.secrets().otaPassword.c_str());
+  }
   ArduinoOTA.onStart([]() { Logger::info("OTA Start"); });
   ArduinoOTA.onEnd([]() { Logger::info("OTA Ende"); });
   ArduinoOTA.onError([](ota_error_t error) {

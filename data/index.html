@@ -3,54 +3,313 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ESP32 Template</title>
+    <title>ESP32 Control Deck</title>
     <style>
       :root {
-        color-scheme: light;
-        --bg: #f6f1e8;
-        --card: #fffaf2;
-        --ink: #1d2a32;
-        --accent: #0d7a68;
-        --line: #d7c8b4;
+        --sand: #f3ebdf;
+        --paper: rgba(255, 250, 243, 0.92);
+        --ink: #19252d;
+        --accent: #0a7f71;
+        --accent-2: #d06224;
+        --line: #d8c6ae;
+      }
+
+      * {
+        box-sizing: border-box;
       }
 
       body {
         margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
         font-family: "IBM Plex Sans", sans-serif;
-        background: radial-gradient(circle at top, #fff8ec 0%, var(--bg) 55%, #e7dbc9 100%);
+        background:
+          radial-gradient(circle at top left, rgba(208, 98, 36, 0.18), transparent 28%),
+          radial-gradient(circle at bottom right, rgba(10, 127, 113, 0.2), transparent 24%),
+          linear-gradient(160deg, #fff7ed 0%, var(--sand) 52%, #e5d6bf 100%);
         color: var(--ink);
       }
 
       main {
-        width: min(92vw, 38rem);
-        padding: 2rem;
-        border: 1px solid var(--line);
-        border-radius: 1.5rem;
-        background: var(--card);
-        box-shadow: 0 1.2rem 3rem rgba(29, 42, 50, 0.12);
+        width: min(1040px, calc(100vw - 2rem));
+        margin: 1rem auto 2rem;
+        display: grid;
+        gap: 1rem;
       }
 
-      h1 {
+      .hero,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--paper);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 22px 60px rgba(25, 37, 45, 0.08);
+      }
+
+      .hero {
+        padding: 1.6rem;
+      }
+
+      .hero h1 {
+        margin: 0 0 0.5rem;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        line-height: 0.95;
+      }
+
+      .hero p {
+        max-width: 50rem;
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1rem;
+      }
+
+      .panel {
+        padding: 1.2rem;
+      }
+
+      h2 {
         margin-top: 0;
         font-family: "Space Grotesk", sans-serif;
       }
 
-      p {
-        line-height: 1.6;
+      dl {
+        margin: 0;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.55rem 0.75rem;
+      }
+
+      dt {
+        font-weight: 700;
+      }
+
+      dd {
+        margin: 0;
+      }
+
+      form {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.85rem;
+      }
+
+      label {
+        display: grid;
+        gap: 0.35rem;
+        font-size: 0.95rem;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.75rem 0.85rem;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        font: inherit;
+        background: rgba(255, 255, 255, 0.75);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 0.8rem 1.1rem;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        color: white;
+        background: linear-gradient(135deg, var(--accent), #1e9788);
+      }
+
+      button.secondary {
+        background: linear-gradient(135deg, var(--accent-2), #e17b37);
+      }
+
+      .hint,
+      .message {
+        line-height: 1.5;
+      }
+
+      .message {
+        min-height: 1.5rem;
+        font-weight: 700;
       }
 
       code {
-        color: var(--accent);
+        color: var(--accent-2);
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>ESP32 Template</h1>
-      <p>Die Vorlage ist aktiv. Statusdaten liefert <code>/api/status</code>.</p>
+      <section class="hero">
+        <h1>ESP32 Control Deck</h1>
+        <p>
+          Solider Ausgangspunkt fuer neue ESP32-Projekte: Status, NTP, lokale Konfiguration,
+          MQTT, OTA und Watchdog in einer wartbaren Basis.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <h2>Status</h2>
+          <dl id="status-grid"></dl>
+        </article>
+
+        <article class="panel">
+          <h2>Hinweise</h2>
+          <p class="hint">
+            Konfigurationsaenderungen werden in <code>/config.ini</code> gespeichert, Secrets getrennt in
+            <code>/secrets.ini</code> in LittleFS.
+            Nach dem Speichern ist ein Neustart sinnvoll, damit WLAN, OTA, NTP und MQTT sauber mit
+            den neuen Werten anlaufen.
+          </p>
+          <div class="actions">
+            <button class="secondary" type="button" id="restart-button">Neustart</button>
+          </div>
+          <p class="message" id="restart-message"></p>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Lokaler Web-Konfigurator</h2>
+        <form id="config-form">
+          <div class="fields">
+            <label>Geraetename
+              <input name="deviceName" autocomplete="off" />
+            </label>
+            <label>WLAN SSID
+              <input name="wifiSsid" autocomplete="off" />
+            </label>
+            <label>WLAN Passwort
+              <input name="wifiPassword" type="password" placeholder="leer = unveraendert" />
+            </label>
+            <label>MQTT Host
+              <input name="mqttHost" autocomplete="off" />
+            </label>
+            <label>MQTT Benutzer
+              <input name="mqttUsername" autocomplete="off" />
+            </label>
+            <label>MQTT Port
+              <input name="mqttPort" inputmode="numeric" />
+            </label>
+            <label>MQTT Client ID
+              <input name="mqttClientId" autocomplete="off" />
+            </label>
+            <label>State Topic
+              <input name="mqttTopicState" autocomplete="off" />
+            </label>
+            <label>Command Topic
+              <input name="mqttTopicCommand" autocomplete="off" />
+            </label>
+            <label>OTA Hostname
+              <input name="otaHostname" autocomplete="off" />
+            </label>
+            <label>OTA Passwort
+              <input name="otaPassword" type="password" placeholder="leer = unveraendert" />
+            </label>
+            <label>MQTT Passwort
+              <input name="mqttPassword" type="password" placeholder="leer = unveraendert" />
+            </label>
+            <label>Zeitzone
+              <input name="timeZone" autocomplete="off" />
+            </label>
+            <label>NTP Primär
+              <input name="ntpServerPrimary" autocomplete="off" />
+            </label>
+            <label>NTP Sekundär
+              <input name="ntpServerSecondary" autocomplete="off" />
+            </label>
+            <label>NTP Tertiär
+              <input name="ntpServerTertiary" autocomplete="off" />
+            </label>
+          </div>
+          <div class="actions">
+            <button type="submit">Konfiguration speichern</button>
+          </div>
+          <p class="message" id="save-message"></p>
+        </form>
+      </section>
     </main>
+
+    <script>
+      const statusGrid = document.querySelector('#status-grid');
+      const form = document.querySelector('#config-form');
+      const saveMessage = document.querySelector('#save-message');
+      const restartButton = document.querySelector('#restart-button');
+      const restartMessage = document.querySelector('#restart-message');
+
+      function writeStatus(status) {
+        const pairs = [
+          ['Board', status.board],
+          ['IP', status.ip],
+          ['WLAN', status.wifiMode === 'ap' ? 'Setup-AP' : (status.wifi ? 'verbunden' : 'offline')],
+          ['SSID', status.activeSsid || '-'],
+          ['MQTT', status.mqtt ? 'verbunden' : 'offline'],
+          ['MQTT Konfig', status.mqttConfigured ? 'gesetzt' : 'leer'],
+          ['Zeit', status.time || 'nicht synchronisiert'],
+          ['Config', status.configOverrides ? 'lokal gespeichert' : 'Header-Defaults'],
+          ['Secrets', status.secretOverrides ? 'lokal gespeichert' : 'Header-Defaults'],
+          ['Display', status.displayReady ? status.displayBackend : `vorbereitet (${status.displayBackend})`],
+          ['Watchdog', status.watchdog && status.watchdog.enabled ? `aktiv (${status.watchdog.timeoutSeconds}s)` : 'inaktiv']
+        ];
+        statusGrid.innerHTML = pairs.map(([key, value]) => `<dt>${key}</dt><dd>${value || '-'}</dd>`).join('');
+      }
+
+      async function loadStatus() {
+        const response = await fetch('/api/status');
+        const status = await response.json();
+        writeStatus(status);
+      }
+
+      async function loadConfig() {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        Object.entries(config).forEach(([key, value]) => {
+          const field = form.elements.namedItem(key);
+          if (field && typeof value !== 'boolean') {
+            field.value = value;
+          }
+        });
+      }
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        saveMessage.textContent = 'Speichere...';
+        const payload = new URLSearchParams(new FormData(form));
+        const response = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: payload.toString()
+        });
+        const result = await response.json();
+        saveMessage.textContent = result.saved
+          ? 'Gespeichert. Bitte danach neu starten.'
+          : 'Speichern fehlgeschlagen.';
+        await loadStatus();
+      });
+
+      restartButton.addEventListener('click', async () => {
+        restartMessage.textContent = 'Neustart wird ausgelöst...';
+        await fetch('/api/restart', { method: 'POST' });
+      });
+
+      loadStatus();
+      loadConfig();
+      setInterval(loadStatus, 5000);
+    </script>
   </body>
 </html>

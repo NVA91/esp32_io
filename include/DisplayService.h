@@ -6,7 +6,14 @@ class DisplayService {
  public:
   void begin();
   void showStatus(const String& headline, const String& detail);
+  String summary() const;
+  bool isReady() const;
+  String backendName() const;
 
  private:
   bool enabled_ = false;
+  bool backendReady_ = false;
+  String lastHeadline_;
+  String lastDetail_;
+  String backendName_ = "profil-only";
 };

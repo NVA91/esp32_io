@@ -26,3 +26,15 @@ String FileSystemService::readFile(const char* path) const {
   file.close();
   return content;
 }
+
+bool FileSystemService::writeFile(const char* path, const String& content) const {
+  File file = LittleFS.open(path, "w");
+  if (!file) {
+    return false;
+  }
+
+  const size_t written = file.print(content);
+  file.close();
+  return written == content.length();
+}
+
